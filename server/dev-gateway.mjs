@@ -2,8 +2,11 @@
 // 上线时本文件逻辑原样迁移到阿里云函数计算。
 import http from 'node:http';
 
-const UPSTREAM = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
-const MODEL = process.env.QWEN_MODEL || 'qwen-plus';
+// base_url 可被 DASHSCOPE_BASE_URL 覆盖；默认 Token Plan（本机实测可用）；标准 DashScope 用 https://dashscope.aliyuncs.com/compatible-mode/v1
+const BASE = (process.env.DASHSCOPE_BASE_URL || 'https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1').replace(/\/+$/, '');
+const UPSTREAM = BASE + '/chat/completions';
+// 注意：reasoning 模型(qwen3.8-max)解析一句话要 ~3500 completion tokens，成本过高；记账解析用非推理 flash 模型即可，可用 QWEN_MODEL 覆盖
+const MODEL = process.env.QWEN_MODEL || 'qwen3.8-flash';
 const KEY = process.env.DASHSCOPE_API_KEY || '';
 
 const SYSTEM_PROMPT = process.env.__LL_SYSTEM || null; // 占位：正式版由 server/prompt.mjs 共享
@@ -84,6 +87,7 @@ http.createServer(async (req, res) => {
           { role: 'user', content: userPrompt },
         ],
         response_format: { type: 'json_object' },
+        enable_thinking: false, // qwen3 混合推理模型：关闭思考，提速省token
         temperature: 0.1,
       }),
     });
@@ -99,4 +103,6 @@ http.createServer(async (req, res) => {
     json(res, 502, { error: 'parse failed', detail: String(e?.message || e) });
   }
 }).listen(Number(process.env.PORT || 8787), () => console.log('LittleLedger dev gateway on :8787'));
+
+
 
