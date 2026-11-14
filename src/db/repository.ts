@@ -77,7 +77,7 @@ export async function createTransaction(t: NewTx): Promise<string> {
   return id;
 }
 
-export async function updateTransaction(id: string, patch: Partial<NewTx>): Promise<void> {
+export async function updateTransaction(id: string, patch: NewTx): Promise<void> {
   const db = await getDb();
   const now = Date.now();
   await db.withTransactionAsync(async () => {
@@ -128,3 +128,4 @@ export async function monthSummary(year: number, month: number) {
     [start, end]);
   return { expenseCents: r?.expense ?? 0, incomeCents: r?.income ?? 0 };
 }
+
